@@ -1,4 +1,4 @@
-![Supera Cover](imgs/supera_conver.jpeg)
+![Supera Cover](imgs/supera_cover.jpeg)
 ---
 
 # Teste técnico para Desenvolvedor Java Pleno
