@@ -1,14 +1,19 @@
 package br.com.api.desafio.Model;
 
+import br.com.api.desafio.Enums.Departament;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.nio.file.FileStore;
 
 @Data
 @Entity
-
+@Builder
 @Table(name = "users")
+@Getter
+@Setter
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -21,17 +26,20 @@ public class User {
 
     private String password;
 
-    public User( String name, String email, String password) {
+    @Enumerated(EnumType.STRING)
+    private Departament department;
+
+   /* public User( String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;
-    }
+    }*/
 
-    public User() {
+    /*public User() {
 
-    }
+    }*/
 
-    public Long getId() {
+    /*public Long getId() {
         return id;
     }
 
@@ -61,5 +69,5 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
+    }*/
 }

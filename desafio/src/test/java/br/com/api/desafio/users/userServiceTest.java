@@ -1,15 +1,21 @@
 package br.com.api.desafio.users;
 
-import br.com.api.desafio.model.User;
-import br.com.api.desafio.repository.UserRepository;
+import br.com.api.desafio.Dtos.CreateUserRequest;
+import br.com.api.desafio.Enums.Departament;
+import br.com.api.desafio.Model.User;
+import br.com.api.desafio.Repository.UserRepository;
+import br.com.api.desafio.Services.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -21,6 +27,58 @@ class UserServiceTest {
     private UserService service;
 
     @Test
+    void shouldCreateUserSuccessfully() {
+        // Arrange (preparação)
+        CreateUserRequest request = new CreateUserRequest(
+                "Eduardo",
+                "edu@example.com",
+                "123456",
+                Departament.TI
+        );
+
+        User savedUser = new User(1L, "Eduardo", "edu@example.com", "123456", Departament.TI);
+
+        when(repository.findByEmail("edu@example.com"))
+                .thenReturn(Optional.empty());
+
+        when(repository.save(any(User.class)))
+                .thenReturn(savedUser);
+
+        // Act (ação)
+        User result = service.createUser(request);
+
+        // Assert (validação)
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getEmail()).isEqualTo("edu@example.com");
+
+        verify(repository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void shouldNotCreateUserWhenEmailAlreadyExists() {
+        // Arrange
+        CreateUserRequest request = new CreateUserRequest(
+                "Edu",
+                "edu@example.com",
+                "123456",
+                Departament.TI
+        );
+
+        when(repository.findByEmail("edu@example.com"))
+                .thenReturn(Optional.of(new User()));
+
+        // Act + Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createUser(request)
+        );
+
+        assertThat(exception.getMessage())
+                .isEqualTo("E-mail já está em uso");
+    }
+
+    /*@Test
     void shouldCreateUserSuccessfully() {
         // Arrange
         User user = new User();
@@ -37,5 +95,5 @@ class UserServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getName()).isEqualTo("Eduardo");
         assertThat(result.getEmail()).isEqualTo("eduardo@email.com");
-    }
+    }*/
 }
