@@ -78,6 +78,108 @@ class UserServiceTest {
                 .isEqualTo("E-mail já está em uso");
     }
 
+    @Test
+    void shouldEncryptPasswordWhenCreatingUser() {
+        // Arrange
+        CreateUserRequest request = new CreateUserRequest(
+                "Eduardo",
+                "edu@example.com",
+                "123456",
+                Departament.FINANCEIRO
+        );
+
+        when(repository.findByEmail("edu@example.com"))
+                .thenReturn(Optional.empty());
+
+        // Criando um usuário que teria sido salvo
+        User savedUser = new User(
+                1L,
+                "Eduardo",
+                "edu@example.com",
+                "$2a$10$encryptedpasswordexample",
+                Departament.TI
+        );
+
+        when(repository.save(any(User.class))).thenReturn(savedUser);
+
+        // Act
+        User result = service.createUser(request);
+
+        // Assert
+        assertThat(result.getPassword()).isNotEqualTo("123456");
+        assertThat(result.getPassword()).startsWith("$2a$"); // padrão do BCrypt
+    }
+
+    @Test
+    void shouldCreateUserWithProvidedDepartment() {
+        // Arrange
+        CreateUserRequest request = new CreateUserRequest(
+                "Eduardo",
+                "edu@example.com",
+                "123456",
+                Departament.FINANCEIRO
+        );
+
+        when(repository.findByEmail("edu@example.com"))
+                .thenReturn(Optional.empty());
+
+        User savedUser = new User(
+                1L,
+                "Eduardo",
+                "edu@example.com",
+                "encryptedPass",
+                Departament.FINANCEIRO
+        );
+
+        when(repository.save(any(User.class))).thenReturn(savedUser);
+
+        // Act
+        User result = service.createUser(request);
+
+        // Assert
+        assertThat(result.getDepartment()).isEqualTo(Departament.FINANCEIRO);
+    }
+
+    @Test
+    void shouldNotCreateUserWithInvalidEmail() {
+        // Arrange
+        CreateUserRequest request = new CreateUserRequest(
+                "Eduardo",
+                "eduardo2008@gmail.com",
+                "123456",
+                Departament.FINANCEIRO
+        );
+
+        // Act + Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createUser(request)
+        );
+
+        assertThat(exception.getMessage())
+                .isEqualTo("E-mail inválido");
+    }
+
+    @Test
+    void shouldNotCreateUserWithMissingRequiredFields() {
+        // Arrange
+        CreateUserRequest request = new CreateUserRequest(
+                "",         // nome inválido
+                "",         // email inválido
+                "",          // senha inválida
+                Departament.FINANCEIRO
+        );
+
+        // Act + Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createUser(request)
+        );
+
+        assertThat(exception.getMessage())
+                .isEqualTo("Campos obrigatórios ausentes");
+    }
+
     /*@Test
     void shouldCreateUserSuccessfully() {
         // Arrange
