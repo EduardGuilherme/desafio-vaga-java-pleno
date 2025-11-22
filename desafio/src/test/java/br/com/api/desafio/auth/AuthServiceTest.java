@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.Optional;
+import java.util.UUID;
 
 public class AuthServiceTest {
 
@@ -35,7 +36,7 @@ public class AuthServiceTest {
         String senhaCripto = passwordEncoder.encode("123456");
 
         User user = new User(
-                "1L",
+                UUID.randomUUID(),
                 "Eduardo",
                 "teste@teste.com",
                 senhaCripto,
@@ -74,7 +75,7 @@ public class AuthServiceTest {
         String senhaCriptografada = passwordEncoder.encode("senhaCorreta");
 
         User user = new User(
-                "1L",
+                UUID.randomUUID(),
                 "Eduardo",
                 "teste@teste.com",
                 senhaCriptografada,

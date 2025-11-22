@@ -14,6 +14,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,7 +45,7 @@ public class AuthControllerTest {
         LoginRequest request = new LoginRequest("user@test.com", "123456");
 
         UserAuthResponse response = new UserAuthResponse(
-                "1L",
+                UUID.randomUUID(),
                 "user@test.com",
                 "Eduardo",
                 "TI"

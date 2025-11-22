@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,7 +37,7 @@ class UserServiceTest {
                 Departament.TI
         );
 
-        User savedUser = new User("1L", "Eduardo", "edu@example.com", "123456", Departament.TI);
+        User savedUser = new User(UUID.randomUUID(), "Eduardo", "edu@example.com", "123456", Departament.TI);
 
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.empty());
@@ -93,7 +94,7 @@ class UserServiceTest {
 
         // Criando um usuário que teria sido salvo
         User savedUser = new User(
-                "1L",
+                UUID.randomUUID(),
                 "Eduardo",
                 "edu@example.com",
                 "$2a$10$encryptedpasswordexample",
@@ -124,7 +125,7 @@ class UserServiceTest {
                 .thenReturn(Optional.empty());
 
         User savedUser = new User(
-                "1L",
+                UUID.randomUUID(),
                 "Eduardo",
                 "edu@example.com",
                 "encryptedPass",
