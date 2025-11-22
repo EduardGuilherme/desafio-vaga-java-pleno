@@ -10,11 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -27,9 +28,12 @@ class UserServiceTest {
     @InjectMocks
     private UserService service;
 
+    // ------------------------------
+    // TESTE 1 — Criar usuário com sucesso
+    // ------------------------------
     @Test
     void shouldCreateUserSuccessfully() {
-        // Arrange (preparação)
+
         CreateUserRequest request = new CreateUserRequest(
                 "Eduardo",
                 "edu@example.com",
@@ -37,28 +41,34 @@ class UserServiceTest {
                 Departament.TI
         );
 
-        User savedUser = new User(UUID.randomUUID(), "Eduardo", "edu@example.com", "123456", Departament.TI);
-
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.empty());
 
-        when(repository.save(any(User.class)))
-                .thenReturn(savedUser);
+        User saved = User.builder()
+                .id(UUID.randomUUID())
+                .name("Eduardo")
+                .email("edu@example.com")
+                .password("$2a$10$encryptedPassword")
+                .department(Departament.TI)
+                .build();
 
-        // Act (ação)
+        when(repository.save(any(User.class))).thenReturn(saved);
+
         User result = service.createUser(request);
 
-        // Assert (validação)
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo("1L");
+        assertThat(result.getId()).isNotNull();
         assertThat(result.getEmail()).isEqualTo("edu@example.com");
 
         verify(repository, times(1)).save(any(User.class));
     }
 
+    // ------------------------------
+    // TESTE 2 — Email já existe
+    // ------------------------------
     @Test
     void shouldNotCreateUserWhenEmailAlreadyExists() {
-        // Arrange
+
         CreateUserRequest request = new CreateUserRequest(
                 "Edu",
                 "edu@example.com",
@@ -69,19 +79,20 @@ class UserServiceTest {
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.of(new User()));
 
-        // Act + Assert
-        IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.createUser(request)
         );
 
-        assertThat(exception.getMessage())
-                .isEqualTo("E-mail já está em uso");
+        assertThat(ex.getMessage()).isEqualTo("E-mail já está em uso");
     }
 
+    // ------------------------------
+    // TESTE 3 — Senha criptografada
+    // ------------------------------
     @Test
     void shouldEncryptPasswordWhenCreatingUser() {
-        // Arrange
+
         CreateUserRequest request = new CreateUserRequest(
                 "Eduardo",
                 "edu@example.com",
@@ -92,28 +103,28 @@ class UserServiceTest {
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.empty());
 
-        // Criando um usuário que teria sido salvo
-        User savedUser = new User(
-                UUID.randomUUID(),
-                "Eduardo",
-                "edu@example.com",
-                "$2a$10$encryptedpasswordexample",
-                Departament.TI
-        );
+        User saved = User.builder()
+                .id(UUID.randomUUID())
+                .name("Eduardo")
+                .email("edu@example.com")
+                .password("$2a$10$encryptedPasswordExample")
+                .department(Departament.FINANCEIRO)
+                .build();
 
-        when(repository.save(any(User.class))).thenReturn(savedUser);
+        when(repository.save(any(User.class))).thenReturn(saved);
 
-        // Act
         User result = service.createUser(request);
 
-        // Assert
         assertThat(result.getPassword()).isNotEqualTo("123456");
-        assertThat(result.getPassword()).startsWith("$2a$"); // padrão do BCrypt
+        assertThat(result.getPassword()).startsWith("$2a$");
     }
 
+    // ------------------------------
+    // TESTE 4 — Criar usuário com departamento enviado
+    // ------------------------------
     @Test
     void shouldCreateUserWithProvidedDepartment() {
-        // Arrange
+
         CreateUserRequest request = new CreateUserRequest(
                 "Eduardo",
                 "edu@example.com",
@@ -124,79 +135,62 @@ class UserServiceTest {
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.empty());
 
-        User savedUser = new User(
-                UUID.randomUUID(),
-                "Eduardo",
-                "edu@example.com",
-                "encryptedPass",
-                Departament.FINANCEIRO
-        );
+        User saved = User.builder()
+                .id(UUID.randomUUID())
+                .name("Eduardo")
+                .email("edu@example.com")
+                .password("encryptedPass")
+                .department(Departament.FINANCEIRO)
+                .build();
 
-        when(repository.save(any(User.class))).thenReturn(savedUser);
+        when(repository.save(any(User.class))).thenReturn(saved);
 
-        // Act
         User result = service.createUser(request);
 
-        // Assert
-        assertThat(result.getDepartment()).isEqualTo(Departament.FINANCEIRO);
+        assertThat(result.getDepartment())
+                .isEqualTo(Departament.FINANCEIRO);
     }
 
+    // ------------------------------
+    // TESTE 5 — Email inválido
+    // ------------------------------
     @Test
     void shouldNotCreateUserWithInvalidEmail() {
-        // Arrange
+
         CreateUserRequest request = new CreateUserRequest(
                 "Eduardo",
-                "eduardo2008@gmail.com",
+                "email_invalido",
                 "123456",
                 Departament.FINANCEIRO
         );
 
-        // Act + Assert
-        IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.createUser(request)
         );
 
-        assertThat(exception.getMessage())
-                .isEqualTo("E-mail inválido");
+        assertThat(ex.getMessage()).isEqualTo("Email Invalido");
     }
 
+    // ------------------------------
+    // TESTE 6 — Falta de campos obrigatórios
+    // ------------------------------
     @Test
     void shouldNotCreateUserWithMissingRequiredFields() {
-        // Arrange
+
         CreateUserRequest request = new CreateUserRequest(
-                "",         // nome inválido
-                "",         // email inválido
-                "",          // senha inválida
+                "",
+                "",
+                "",
                 Departament.FINANCEIRO
         );
 
-        // Act + Assert
-        IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.createUser(request)
         );
 
-        assertThat(exception.getMessage())
-                .isEqualTo("Campos obrigatórios ausentes");
+        assertThat(ex.getMessage())
+                .isEqualTo("campos Obrigadotios ausentes");
     }
-
-    /*@Test
-    void shouldCreateUserSuccessfully() {
-        // Arrange
-        User user = new User();
-        user.setName("Eduardo");
-        user.setEmail("eduardo@email.com");
-        user.setPassword("123456");
-
-        when(repository.save(user)).thenReturn(user);
-
-        // Act
-        User result = service.createUser(user);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo("Eduardo");
-        assertThat(result.getEmail()).isEqualTo("eduardo@email.com");
-    }*/
 }

@@ -3,6 +3,7 @@ package br.com.api.desafio.Controller;
 import br.com.api.desafio.Auth.AuthService;
 import br.com.api.desafio.Dtos.LoginRequest;
 import br.com.api.desafio.Dtos.UserAuthResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class AuthController {
     private final AuthService  authService;
 
     @PostMapping("/login")
-    public ResponseEntity<UserAuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<UserAuthResponse> login(@Valid @RequestBody LoginRequest request) {
         try {
             return ResponseEntity.ok(authService.login(request));
         } catch (IllegalArgumentException e) {

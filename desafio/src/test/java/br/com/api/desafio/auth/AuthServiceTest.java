@@ -35,13 +35,13 @@ public class AuthServiceTest {
 
         String senhaCripto = passwordEncoder.encode("123456");
 
-        User user = new User(
-                UUID.randomUUID(),
-                "Eduardo",
-                "teste@teste.com",
-                senhaCripto,
-                Departament.TI
-        );
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .name("Eduardo")
+                .email("teste@teste.com")
+                .password(senhaCripto)
+                .department(Departament.TI)
+                .build();
 
         when(userRepository.findByEmail("teste@teste.com"))
                 .thenReturn(Optional.of(user));
@@ -74,13 +74,13 @@ public class AuthServiceTest {
 
         String senhaCriptografada = passwordEncoder.encode("senhaCorreta");
 
-        User user = new User(
-                UUID.randomUUID(),
-                "Eduardo",
-                "teste@teste.com",
-                senhaCriptografada,
-                Departament.TI
-        );
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .name("Eduardo")
+                .email("teste@teste.com")
+                .password(senhaCriptografada)
+                .department(Departament.TI)
+                .build();
 
         when(userRepository.findByEmail("teste@teste.com"))
                 .thenReturn(Optional.of(user));

@@ -44,13 +44,12 @@ public class UserService {
                 .passwordEncoder.encode(request.password())
                 .department(Departament.TI) // temporário — vamos ajustar depois
                 .build();*/
-        User newUser = new User(
-                null,
-                request.name(),
-                request.email(),
-                passwordEncoder.encode(request.password()),
-                request.departament()
-        );
+        User newUser = User.builder()
+                .name(request.name())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .department(request.departament())
+                .build();
 
         return userRepository.save(newUser);
     }
