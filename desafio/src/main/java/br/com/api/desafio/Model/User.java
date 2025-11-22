@@ -4,7 +4,9 @@ import br.com.api.desafio.Enums.Departament;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.nio.file.FileStore;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -17,7 +19,7 @@ import java.nio.file.FileStore;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    private UUID id;
 
     private String name;
 
@@ -28,6 +30,9 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Departament department;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> activeModules = new HashSet<>();
 
    /* public User( String name, String email, String password) {
         this.name = name;

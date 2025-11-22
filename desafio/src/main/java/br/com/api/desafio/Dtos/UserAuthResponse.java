@@ -1,7 +1,9 @@
 package br.com.api.desafio.Dtos;
 
+import java.util.UUID;
+
 public record UserAuthResponse(
-        String id,
+        UUID id,
         String email,
         String name,
         String department
