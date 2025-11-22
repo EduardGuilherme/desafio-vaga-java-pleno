@@ -36,7 +36,7 @@ class UserServiceTest {
                 Departament.TI
         );
 
-        User savedUser = new User(1L, "Eduardo", "edu@example.com", "123456", Departament.TI);
+        User savedUser = new User("1L", "Eduardo", "edu@example.com", "123456", Departament.TI);
 
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.empty());
@@ -49,7 +49,7 @@ class UserServiceTest {
 
         // Assert (validação)
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo("1L");
         assertThat(result.getEmail()).isEqualTo("edu@example.com");
 
         verify(repository, times(1)).save(any(User.class));
@@ -93,7 +93,7 @@ class UserServiceTest {
 
         // Criando um usuário que teria sido salvo
         User savedUser = new User(
-                1L,
+                "1L",
                 "Eduardo",
                 "edu@example.com",
                 "$2a$10$encryptedpasswordexample",
@@ -124,7 +124,7 @@ class UserServiceTest {
                 .thenReturn(Optional.empty());
 
         User savedUser = new User(
-                1L,
+                "1L",
                 "Eduardo",
                 "edu@example.com",
                 "encryptedPass",
