@@ -4,6 +4,8 @@ import br.com.api.desafio.Auth.AuthService;
 import br.com.api.desafio.Dtos.LoginRequest;
 import br.com.api.desafio.Dtos.UserAuthResponse;
 import br.com.api.desafio.Enums.Departament;
+import br.com.api.desafio.Exceptions.InvalidPasswordException;
+import br.com.api.desafio.Exceptions.UserNotFoundException;
 import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +32,7 @@ public class AuthServiceTest {
 
     @Test
     void mustAuthenticateUserWithValidCredentials(){
-        // Arrange
+
         LoginRequest request = new LoginRequest("teste@teste.com", "123456");
 
         String senhaCripto = passwordEncoder.encode("123456");
@@ -64,7 +66,7 @@ public class AuthServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("Usuário não encontrado");
     }
 
@@ -86,7 +88,7 @@ public class AuthServiceTest {
                 .thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidPasswordException.class)
                 .hasMessage("Senha inválida");
     }
 }

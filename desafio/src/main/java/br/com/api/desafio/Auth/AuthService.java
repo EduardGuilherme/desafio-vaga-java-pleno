@@ -2,6 +2,8 @@ package br.com.api.desafio.Auth;
 
 import br.com.api.desafio.Dtos.LoginRequest;
 import br.com.api.desafio.Dtos.UserAuthResponse;
+import br.com.api.desafio.Exceptions.InvalidPasswordException;
+import br.com.api.desafio.Exceptions.UserNotFoundException;
 import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,12 +23,12 @@ public class AuthService {
     public UserAuthResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
 
-        boolean matches = passwordEncoder.matches(request.password(), user.getPassword());
+        //boolean matches = passwordEncoder.matches(request.password(), user.getPassword());
 
-        if (!matches) {
-            throw new IllegalArgumentException("Senha inválida");
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new InvalidPasswordException("Senha inválida");
         }
 
         return new UserAuthResponse(

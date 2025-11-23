@@ -1,7 +1,10 @@
 package br.com.api.desafio.users;
 
 import br.com.api.desafio.Dtos.CreateUserRequest;
+import br.com.api.desafio.Dtos.UpdateUserRequest;
 import br.com.api.desafio.Enums.Departament;
+import br.com.api.desafio.Exceptions.EmailAlreadyExistsException;
+import br.com.api.desafio.Exceptions.UserNotFoundException;
 import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Repository.UserRepository;
 import br.com.api.desafio.Services.UserService;
@@ -28,9 +31,6 @@ class UserServiceTest {
     @InjectMocks
     private UserService service;
 
-    // ------------------------------
-    // TESTE 1 — Criar usuário com sucesso
-    // ------------------------------
     @Test
     void shouldCreateUserSuccessfully() {
 
@@ -63,9 +63,6 @@ class UserServiceTest {
         verify(repository, times(1)).save(any(User.class));
     }
 
-    // ------------------------------
-    // TESTE 2 — Email já existe
-    // ------------------------------
     @Test
     void shouldNotCreateUserWhenEmailAlreadyExists() {
 
@@ -79,17 +76,13 @@ class UserServiceTest {
         when(repository.findByEmail("edu@example.com"))
                 .thenReturn(Optional.of(new User()));
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> service.createUser(request)
-        );
 
-        assertThat(ex.getMessage()).isEqualTo("E-mail já está em uso");
+        assertThatThrownBy(() -> service.createUser(request))
+                .isInstanceOf(EmailAlreadyExistsException.class)
+                .hasMessage("E-mail já está em uso");
     }
 
-    // ------------------------------
-    // TESTE 3 — Senha criptografada
-    // ------------------------------
+
     @Test
     void shouldEncryptPasswordWhenCreatingUser() {
 
@@ -119,9 +112,6 @@ class UserServiceTest {
         assertThat(result.getPassword()).startsWith("$2a$");
     }
 
-    // ------------------------------
-    // TESTE 4 — Criar usuário com departamento enviado
-    // ------------------------------
     @Test
     void shouldCreateUserWithProvidedDepartment() {
 
@@ -151,9 +141,7 @@ class UserServiceTest {
                 .isEqualTo(Departament.FINANCEIRO);
     }
 
-    // ------------------------------
-    // TESTE 5 — Email inválido
-    // ------------------------------
+
     @Test
     void shouldNotCreateUserWithInvalidEmail() {
 
@@ -172,9 +160,6 @@ class UserServiceTest {
         assertThat(ex.getMessage()).isEqualTo("Email Invalido");
     }
 
-    // ------------------------------
-    // TESTE 6 — Falta de campos obrigatórios
-    // ------------------------------
     @Test
     void shouldNotCreateUserWithMissingRequiredFields() {
 
@@ -192,5 +177,18 @@ class UserServiceTest {
 
         assertThat(ex.getMessage())
                 .isEqualTo("campos Obrigadotios ausentes");
+    }
+
+    @Test
+    void shouldFailWhenUpdatingNonExistingUser() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                service.updateUser(id, new UpdateUserRequest(null, null, null, null))
+        ).isInstanceOf(UserNotFoundException.class)
+                .hasMessage("Usuário não encontrado");
     }
 }
