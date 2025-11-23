@@ -1,16 +1,24 @@
 package br.com.api.desafio.Services;
 
+import br.com.api.desafio.Dtos.AccessRequestFilterDTO;
 import br.com.api.desafio.Dtos.CreateAccessRequestDTO;
+import br.com.api.desafio.Dtos.ResponseAccessRequestDTO;
 import br.com.api.desafio.Enums.Departament;
 import br.com.api.desafio.Enums.DepartmentRules;
 import br.com.api.desafio.Enums.RequestStatus;
+import br.com.api.desafio.Exceptions.ModuleIncompatibilityException;
 import br.com.api.desafio.Model.AccessRequest;
-import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Model.Modules;
+import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Repository.AccessRequestRepository;
 import br.com.api.desafio.Repository.ModuleRepository;
 import br.com.api.desafio.Repository.UserRepository;
+import br.com.api.desafio.Specifications.AccessRequestSpecs;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -42,7 +50,7 @@ public class AccessRequestService {
                 moduleRepository.findAllById(dto.moduleIds())
         );
         if (modules.size() != dto.moduleIds().size()) {
-            throw new IllegalArgumentException("Um ou mais módulos não existem.");
+            throw new ModuleIncompatibilityException("Um ou mais módulos não existem.");
         }
 
         // 3 — Validar justificativa
@@ -119,7 +127,7 @@ public class AccessRequestService {
             for (String active : activeModules) {
                 if (current.getIncompatibleWith().stream()
                         .anyMatch(m -> m.getName().equalsIgnoreCase(active))) {
-                    throw new IllegalArgumentException(
+                    throw new ModuleIncompatibilityException(
                             "Módulo incompatível com outro módulo já ativo em seu perfil");
                 }
             }
@@ -127,7 +135,7 @@ public class AccessRequestService {
             // Verificar incompatibilidade entre módulos da própria solicitação
             for (Modules other : modules) {
                 if (!current.equals(other) && current.getIncompatibleWith().contains(other)) {
-                    throw new IllegalArgumentException(
+                    throw new ModuleIncompatibilityException(
                             "Módulos incompatíveis selecionados: "
                                     + current.getName() + " e " + other.getName()
                     );
@@ -206,6 +214,133 @@ public class AccessRequestService {
         request.setStatus(RequestStatus.NEGADO);
         request.setDenialReason(reason);
         request.setExpiresAt(null);
+    }
+
+    public AccessRequest cancelRequest(UUID requestId, UUID userId, String reason) {
+
+        // Buscar solicitação
+        AccessRequest req = accessRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+
+        // Validar dono
+        if (!req.getRequester().getId().equals(userId)) {
+            throw new IllegalArgumentException("Você não tem permissão para cancelar esta solicitação.");
+        }
+
+        // Validar status
+        if (req.getStatus() != RequestStatus.ATIVO) {
+            throw new IllegalArgumentException("Somente solicitações com status ATIVO podem ser canceladas.");
+        }
+
+        // Validar motivo
+        if (reason == null || reason.trim().length() < 10 || reason.trim().length() > 200) {
+            throw new IllegalArgumentException("O motivo deve ter entre 10 e 200 caracteres.");
+        }
+
+        // Atualizar status
+        req.setStatus(RequestStatus.CANCELADO);
+        req.setDenialReason(reason);  // opcional, pode criar outro campo se quiser
+        req.setExpiresAt(LocalDateTime.now());
+
+        // Revogar acessos do usuário
+        User user = req.getRequester();
+
+        req.getModules().forEach(m ->
+                user.getActiveModules().remove(m.getName())
+        );
+
+        userRepository.save(user);
+        return accessRequestRepository.save(req);
+    }
+
+    public AccessRequest getById(UUID id) {
+        return accessRequestRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+    }
+
+    public List<AccessRequest> getByUser(UUID userId) {
+        return accessRequestRepository.findByRequesterId(userId);
+    }
+
+    public Page<AccessRequest> getAll(Pageable pageable) {
+        return accessRequestRepository.findAll(pageable);
+    }
+
+    public AccessRequest renewRequest(UUID requestId, UUID userId) {
+
+        AccessRequest oldReq = accessRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+
+        // Validar dono
+        if (!oldReq.getRequester().getId().equals(userId)) {
+            throw new IllegalArgumentException("Você não tem permissão para renovar esta solicitação.");
+        }
+
+        // Validar status
+        if (oldReq.getStatus() != RequestStatus.ATIVO) {
+            throw new IllegalArgumentException("Somente solicitações com status ATIVO podem ser renovadas.");
+        }
+
+        // Validar prazo (< 30 dias antes da expiração)
+        if (oldReq.getExpiresAt() == null ||
+                oldReq.getExpiresAt().isAfter(LocalDateTime.now().plusDays(30))) {
+            throw new IllegalArgumentException(
+                    "Renovação permitida apenas quando faltar menos de 30 dias para expiração."
+            );
+        }
+
+        // Criar nova solicitação herdando dados da anterior
+        AccessRequest newReq = AccessRequest.builder()
+                .id(null)
+                .requester(oldReq.getRequester())
+                .modules(oldReq.getModules())
+                .justification(oldReq.getJustification())
+                .urgent(oldReq.isUrgent())
+                .createdAt(LocalDateTime.now())
+                .protocol(generateProtocol())
+                .build();
+
+        // Aplicar regras novamente
+        applyBusinessRules(newReq, oldReq.getRequester());
+
+        // Estende +180 dias (se aprovado)
+        if (newReq.getStatus() == RequestStatus.ATIVO) {
+            newReq.setExpiresAt(LocalDateTime.now().plusDays(180));
+        }
+
+        return accessRequestRepository.save(newReq);
+    }
+
+    public Page<AccessRequest> searchRequests(
+            UUID userId,
+            AccessRequestFilterDTO filters,
+            int page,
+            int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        return accessRequestRepository.findAll(
+                AccessRequestSpecs.filter(userId, filters),
+                pageable
+        );
+    }
+
+    public Page<AccessRequest> search(UUID userId, AccessRequestFilterDTO filter, Pageable pageable) {
+        return accessRequestRepository.findAll(AccessRequestSpecs.filter(userId, filter), pageable);
+    }
+
+    public Page<ResponseAccessRequestDTO> list(
+            UUID userId,
+            AccessRequestFilterDTO filter,
+            int page,
+            int size
+    ) {
+        var pageable = PageRequest.of(page, size);
+
+        var spec = AccessRequestSpecs.filter(userId, filter);
+
+        return accessRequestRepository.findAll(spec, pageable)
+                .map(ResponseAccessRequestDTO::fromEntity);
     }
 
 }
