@@ -1,38 +1,75 @@
 package br.com.api.desafio.Exceptions;
 
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
+@ControllerAdvice
 public class GlobalExceptionHandler {
+    // 400 — ValidationException personalizada
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(ValidationException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(
+                ErrorResponse.simple(status.value(), status.getReasonPhrase(), ex.getMessage())
+        );
+    }
+
+    // 404 — NotFoundException
+    @ExceptionHandler(ChangeSetPersister.NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFoundException(ChangeSetPersister.NotFoundException ex) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(status).body(
+                ErrorResponse.simple(status.value(), status.getReasonPhrase(), ex.getMessage())
+        );
+    }
+
+    // 400 — IllegalArgumentException
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(
+                ErrorResponse.simple(status.value(), status.getReasonPhrase(), ex.getMessage())
+        );
+    }
+
+    // 400 — Bean Validation (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<ErrorResponse> handleBeanValidation(MethodArgumentNotValidException ex) {
 
-        ex.getBindingResult().getFieldErrors()
-                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+        Map<String, String> fieldErrors = new HashMap<>();
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status).body(
+                ErrorResponse.withFields(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        "Erro de validação nos campos enviados.",
+                        fieldErrors
+                )
+        );
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<String> handleUserNotFound(UserNotFoundException ex){
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
+    // 500 — erros inesperados
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
+        ex.printStackTrace();
 
-    @ExceptionHandler(InvalidPasswordException.class)
-    public ResponseEntity<String> handleInvalidPassword(InvalidPasswordException ex){
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
-    }
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<String> handleEmailExists(EmailAlreadyExistsException ex){
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        return ResponseEntity.status(status).body(
+                ErrorResponse.simple(status.value(), status.getReasonPhrase(), "Erro interno no servidor")
+        );
     }
 }
