@@ -191,4 +191,105 @@ class UserServiceTest {
         ).isInstanceOf(UserNotFoundException.class)
                 .hasMessage("Usuário não encontrado");
     }
+
+    @Test
+    void shouldUpdateUserSuccessfully() {
+        UUID id = UUID.randomUUID();
+
+        User existingUser = User.builder()
+                .id(id)
+                .name("Antigo")
+                .email("old@example.com")
+                .password("oldPass")
+                .department(Departament.TI)
+                .build();
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Novo Nome",
+                "novo@example.com",
+                "novaSenha123",
+                Departament.FINANCEIRO
+        );
+
+        when(repository.findById(id)).thenReturn(Optional.of(existingUser));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User updated = service.updateUser(id, request);
+
+        assertThat(updated.getName()).isEqualTo("Novo Nome");
+        assertThat(updated.getEmail()).isEqualTo("novo@example.com");
+        assertThat(updated.getDepartment()).isEqualTo(Departament.FINANCEIRO);
+        assertThat(updated.getPassword()).isNotEqualTo("novaSenha123"); // senha deve estar criptografada
+        assertThat(updated.getPassword()).startsWith("$2a$");
+    }
+    @Test
+    void shouldFailWhenUpdatingToExistingEmail() {
+        UUID id = UUID.randomUUID();
+
+        User existingUser = User.builder()
+                .id(id)
+                .name("User")
+                .email("old@example.com")
+                .password("pass")
+                .department(Departament.TI)
+                .build();
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "User",
+                "existing@example.com", // email que já existe
+                null,
+                null
+        );
+
+        when(repository.findById(id)).thenReturn(Optional.of(existingUser));
+        when(repository.findByEmail("existing@example.com"))
+                .thenReturn(Optional.of(new User())); // já existe
+
+        assertThatThrownBy(() -> service.updateUser(id, request))
+                .isInstanceOf(EmailAlreadyExistsException.class)
+                .hasMessage("E-mail já está em uso");
+    }
+    @Test
+    void shouldNotUpdateUserWhenEmailAlreadyExists() {
+
+        UUID id = UUID.randomUUID();
+
+
+        User existingUser = User.builder()
+                .id(id)
+                .name("Usuário Atual")
+                .email("atual@example.com")
+                .password("senhaAntigaCripto")
+                .department(Departament.TI)
+                .build();
+
+
+        User anotherUser = User.builder()
+                .id(UUID.randomUUID())
+                .name("Outro Usuário")
+                .email("email@existente.com")
+                .password("outraSenha")
+                .department(Departament.FINANCEIRO)
+                .build();
+
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Novo Nome",
+                "email@existente.com", // já em uso
+                "novaSenha123",
+                Departament.RH
+        );
+
+
+        when(repository.findById(id)).thenReturn(Optional.of(existingUser));
+
+
+        when(repository.findByEmail("email@existente.com"))
+                .thenReturn(Optional.of(anotherUser));
+
+
+        assertThatThrownBy(() -> service.updateUser(id, request))
+                .isInstanceOf(EmailAlreadyExistsException.class)
+                .hasMessage("E-mail já está em uso");
+    }
 }

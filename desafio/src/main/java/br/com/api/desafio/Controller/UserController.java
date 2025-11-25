@@ -4,6 +4,7 @@ import br.com.api.desafio.Dtos.CreateUserRequest;
 import br.com.api.desafio.Dtos.UpdateUserRequest;
 import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Services.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,7 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUsers(){
         return ResponseEntity.ok(userService.getAll());
     }
-
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{id}")
     public ResponseEntity<User> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getById(id));

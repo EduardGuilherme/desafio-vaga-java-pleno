@@ -3,6 +3,7 @@ package br.com.api.desafio.Controller;
 import br.com.api.desafio.Dtos.*;
 import br.com.api.desafio.Enums.RequestStatus;
 import br.com.api.desafio.Services.AccessRequestService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/requests")
+@SecurityRequirement(name = "bearerAuth")
 public class AccessRequestController {
 
     private final AccessRequestService service;

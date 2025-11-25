@@ -12,6 +12,7 @@ import br.com.api.desafio.Repository.UserRepository;
 import br.com.api.desafio.Security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import static org.assertj.core.api.Assertions.*;
@@ -58,7 +59,17 @@ public class AuthServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.email()).isEqualTo("teste@teste.com");
         assertThat(result.name()).isEqualTo("Eduardo");
-        //assertThat(result.department()).isEqualTo("TI");
+        assertThat(result.token()).isEqualTo("fake-jwt-token");
+
+        ArgumentCaptor<String> emailCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> roleCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<UUID> idCaptor = ArgumentCaptor.forClass(UUID.class);
+
+        verify(jwtUtil).generateToken(emailCaptor.capture(), roleCaptor.capture(), idCaptor.capture());
+
+        assertThat(emailCaptor.getValue()).isEqualTo(user.getEmail());
+        assertThat(roleCaptor.getValue()).isEqualTo("TI");
+        assertThat(idCaptor.getValue()).isEqualTo(user.getId());
     }
 
     @Test
@@ -93,5 +104,15 @@ public class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(InvalidPasswordException.class)
                 .hasMessage("Senha inválida");
+    }
+
+    @Test
+    void shouldValidateToken() {
+        when(jwtUtil.validateToken("abc123")).thenReturn(true);
+
+        boolean result = authService.validateToken("abc123");
+
+        assertThat(result).isTrue();
+        verify(jwtUtil, times(1)).validateToken("abc123");
     }
 }

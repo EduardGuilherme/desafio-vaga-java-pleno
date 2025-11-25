@@ -5,6 +5,7 @@ import br.com.api.desafio.Controller.AuthController;
 import br.com.api.desafio.Dtos.LoginRequest;
 import br.com.api.desafio.Dtos.TokenResponseDTO;
 import br.com.api.desafio.Dtos.UserAuthResponse;
+import br.com.api.desafio.Exceptions.UserNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void deveAutenticarUsuarioComSucesso() throws Exception {
+    void mustAuthenticateUserSuccessfully() throws Exception {
 
         LoginRequest request = new LoginRequest("user@test.com", "123456");
 
@@ -72,7 +73,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void deveRetornar401QuandoCredenciaisInvalidas() throws Exception {
+    void shouldReturn401WhenInvalidCredentials() throws Exception {
 
         LoginRequest request = new LoginRequest("user@test.com", "errada");
 
@@ -85,5 +86,35 @@ public class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request))
                 )
                 .andExpect(status().isUnauthorized());
+    }
+    @Test
+    void shouldReturnUnauthorizedWhenUserNotFound() throws Exception {
+
+        when(authService.login(any(LoginRequest.class)))
+                .thenThrow(new UserNotFoundException("Usuário não encontrado"));
+
+        LoginRequest request = new LoginRequest("naoexiste@teste.com", "123456");
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenBodyIsInvalid() throws Exception {
+
+        // sem email, sem senha
+        String invalidJson = """
+                {
+                    "email": "",
+                    "password": ""
+                }
+                """;
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJson))
+                .andExpect(status().isBadRequest());
     }
 }

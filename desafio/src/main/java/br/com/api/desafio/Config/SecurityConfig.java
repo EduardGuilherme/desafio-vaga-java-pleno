@@ -45,6 +45,11 @@ public class SecurityConfig {
                 .and()
                 .authorizeHttpRequests()
                 .requestMatchers("/auth/login").permitAll()
+                .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**"
+                ).permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/users").permitAll()
                 .anyRequest().authenticated();
