@@ -2,30 +2,73 @@ version: "3.9"
 
 services:
   db:
-    image: postgres:16
+    image: postgres:13
     container_name: desafio-db
     restart: always
     environment:
       POSTGRES_DB: desafio
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: 123
-    ports:
-      - "5432:5432"
+    networks:
+      - desafio-api
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  api:
+  app1:
     build: .
-    container_name: desafio-api
-    depends_on:
-      - db
+    container_name: desafio-app1
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/desafio
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      FLYWAY_ENABLED: true
+      SERVER_PORT: 8080
+    networks:
+      - desafio-api
+
+  app2:
+    build: .
+    container_name: desafio-app2
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/desafio
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      FLYWAY_ENABLED: true
+      SERVER_PORT: 8080
+    networks:
+      - desafio-api
+
+  app3:
+    build: .
+    container_name: desafio-app3
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/desafio
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      FLYWAY_ENABLED: true
+      SERVER_PORT: 8080
+    networks:
+      - desafio-api
+
+  lb:
+    image: nginx:latest
+    container_name: desafio-lb
     ports:
-      - "8080:8080"
+      - "8080:80"   # Swagger acessado via http://localhost:8080
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app1
+      - app2
+      - app3
+    networks:
+      - desafio-api
+
+networks:
+  desafio-api:
 
 volumes:
   postgres-data:
