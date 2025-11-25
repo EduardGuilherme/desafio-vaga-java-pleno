@@ -22,11 +22,12 @@ public class AccessRequestController {
 
     private final AccessRequestService service;
 
-    @PostMapping("/user/{userId}")
+    @PostMapping
     public ResponseEntity<ResponseAccessRequestDTO> create(
-            @PathVariable UUID userId,
+            Principal principal,
             @Valid @RequestBody CreateAccessRequestDTO dto) {
 
+        UUID userId = UUID.fromString(principal.getName());
         var req = service.createRequest(dto, userId);
         return ResponseEntity.ok(ResponseAccessRequestDTO.fromEntity(req));
     }
