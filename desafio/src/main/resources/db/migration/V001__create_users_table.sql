@@ -1,6 +1,4 @@
--- ===========================================
--- ENUMS (PostgreSQL)
--- ===========================================
+
 CREATE TYPE departament_enum AS ENUM ('FINANCEIRO','OPERACOES','OUTROS','RH','TI');
 CREATE TYPE request_status_enum AS ENUM ('ATIVO','CANCELADO','NEGADO');
 
@@ -20,3 +18,4 @@ CREATE TABLE user_active_modules (
     active_modules VARCHAR(255) NOT NULL,
     CONSTRAINT fk_user_modules FOREIGN KEY (user_id) REFERENCES users(id)
 );
+

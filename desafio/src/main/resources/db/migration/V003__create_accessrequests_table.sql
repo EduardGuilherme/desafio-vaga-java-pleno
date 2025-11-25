@@ -1,6 +1,4 @@
--- ===========================================
--- TABLE: access_request
--- ===========================================
+
 CREATE TABLE access_request (
     id UUID PRIMARY KEY,
     protocol VARCHAR(255),
