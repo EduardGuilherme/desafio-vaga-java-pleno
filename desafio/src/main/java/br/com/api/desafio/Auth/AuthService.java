@@ -1,11 +1,13 @@
 package br.com.api.desafio.Auth;
 
 import br.com.api.desafio.Dtos.LoginRequest;
+import br.com.api.desafio.Dtos.TokenResponseDTO;
 import br.com.api.desafio.Dtos.UserAuthResponse;
 import br.com.api.desafio.Exceptions.InvalidPasswordException;
 import br.com.api.desafio.Exceptions.UserNotFoundException;
 import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Repository.UserRepository;
+import br.com.api.desafio.Security.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,14 +15,17 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public AuthService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
-    public UserAuthResponse login(LoginRequest request) {
+    public TokenResponseDTO login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
@@ -31,12 +36,15 @@ public class AuthService {
             throw new InvalidPasswordException("Senha inválida");
         }
 
-        return new UserAuthResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getDepartment().name()
-        );
+        String token = jwtUtil.generateToken(user.getEmail(),
+                user.getDepartment() != null ? user.getDepartment().name() : "USER",
+                user.getId());
+
+        return new TokenResponseDTO(token, "Bearer", user.getId(), user.getEmail(), user.getName());
+    }
+
+    public boolean validateToken(String token) {
+        return jwtUtil.validateToken(token);
     }
 }
 

@@ -2,12 +2,14 @@ package br.com.api.desafio.auth;
 
 import br.com.api.desafio.Auth.AuthService;
 import br.com.api.desafio.Dtos.LoginRequest;
+import br.com.api.desafio.Dtos.TokenResponseDTO;
 import br.com.api.desafio.Dtos.UserAuthResponse;
 import br.com.api.desafio.Enums.Departament;
 import br.com.api.desafio.Exceptions.InvalidPasswordException;
 import br.com.api.desafio.Exceptions.UserNotFoundException;
 import br.com.api.desafio.Model.User;
 import br.com.api.desafio.Repository.UserRepository;
+import br.com.api.desafio.Security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -22,12 +24,13 @@ public class AuthServiceTest {
     private UserRepository userRepository;
     private AuthService authService;
     private BCryptPasswordEncoder passwordEncoder;
+    private JwtUtil jwtUtil;
 
     @BeforeEach
     void setup(){
         userRepository = mock(UserRepository.class);
         passwordEncoder = new BCryptPasswordEncoder();
-        authService = new AuthService(userRepository,passwordEncoder);
+        authService = new AuthService(userRepository,passwordEncoder,jwtUtil);
     }
 
     @Test
@@ -49,13 +52,13 @@ public class AuthServiceTest {
                 .thenReturn(Optional.of(user));
 
         // Act
-        UserAuthResponse result = authService.login(request);
+        TokenResponseDTO result = authService.login(request);
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.email()).isEqualTo("teste@teste.com");
         assertThat(result.name()).isEqualTo("Eduardo");
-        assertThat(result.department()).isEqualTo("TI");
+        //assertThat(result.department()).isEqualTo("TI");
     }
 
     @Test

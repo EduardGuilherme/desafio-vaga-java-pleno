@@ -3,6 +3,7 @@ package br.com.api.desafio.controller;
 import br.com.api.desafio.Auth.AuthService;
 import br.com.api.desafio.Controller.AuthController;
 import br.com.api.desafio.Dtos.LoginRequest;
+import br.com.api.desafio.Dtos.TokenResponseDTO;
 import br.com.api.desafio.Dtos.UserAuthResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,11 +45,14 @@ public class AuthControllerTest {
 
         LoginRequest request = new LoginRequest("user@test.com", "123456");
 
-        UserAuthResponse response = new UserAuthResponse(
-                UUID.randomUUID(),
+        UUID id = UUID.randomUUID();
+
+        TokenResponseDTO response = new TokenResponseDTO(
+                "fake.jwt.token",
+                "Bearer",
+                id,
                 "user@test.com",
-                "Eduardo",
-                "TI"
+                "Eduardo"
         );
 
         when(authService.login(any(LoginRequest.class)))
@@ -60,10 +64,11 @@ public class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request))
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.token").value("fake.jwt.token"))
+                .andExpect(jsonPath("$.type").value("Bearer"))
+                .andExpect(jsonPath("$.userId").value(id.toString()))
                 .andExpect(jsonPath("$.email").value("user@test.com"))
-                .andExpect(jsonPath("$.name").value("Eduardo"))
-                .andExpect(jsonPath("$.department").value("TI"));
+                .andExpect(jsonPath("$.name").value("Eduardo"));
     }
 
     @Test
