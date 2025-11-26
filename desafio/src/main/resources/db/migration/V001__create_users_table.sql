@@ -1,4 +1,3 @@
-
 CREATE TYPE departament_enum AS ENUM ('FINANCEIRO','OPERACOES','OUTROS','RH','TI');
 CREATE TYPE request_status_enum AS ENUM ('ATIVO','CANCELADO','NEGADO');
 

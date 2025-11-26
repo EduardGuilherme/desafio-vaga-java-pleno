@@ -1,6 +1,7 @@
 package br.com.api.desafio.Model;
 
 import br.com.api.desafio.Enums.Departament;
+import br.com.api.desafio.Enums.DepartamentConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +30,7 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @Convert(converter = DepartamentConverter.class)
     private Departament department;
 
     @ElementCollection(fetch = FetchType.EAGER)

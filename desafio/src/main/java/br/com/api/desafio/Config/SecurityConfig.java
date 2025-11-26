@@ -51,7 +51,7 @@ public class SecurityConfig {
                         "/swagger-ui/**"
                 ).permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/users").permitAll()
+                .requestMatchers("/users/**").permitAll()
                 .anyRequest().authenticated();
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
